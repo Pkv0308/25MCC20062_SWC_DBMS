@@ -95,43 +95,6 @@ set search_path to 'P10566';
 -- (1055, 108, 'smartphone', '2025-10-19 14:00:20', 'click', 'S108-0');
 
 
-select user_id, (case when registration_date>=(select (max(registration_date))-30 as threshold from accounts) 
-		then 'New' else 'Registered' end ) as user_category from accounts
-group by user_id; 
-
-
-select user_category, sum(case when user_category='New' then 1 end) 
-	from search_events se join 
-
-
-
-select ss.user_id,ss.query,cat.user_category from 
-	(select s1.user_id,s1.query,s1.session_id 
-		from search_events s1
-		join search_events s2
-		on
-		s2.user_id=s1.user_id
-		and s2.query=s1.query
-		and s2.session_id=s1.session_id
-	where s2.event_type<>s1.event_type
-	and s1.event_type<>'click'
-	and (select extract(epoch from 
-			(s2.event_timestamp -  s1.event_timestamp)
-			)) <=30
-	) ss
- join 
-	(select user_id, (case when registration_date>=(select (max(registration_date))-30 as threshold from accounts) 
-		then 'new' else 'existing' end ) as user_category from accounts
-	 group by user_id
-	) cat
-on cat.user_id=ss.user_id
-group by ss.user_id,ss.query,cat.user_category
-
-
-
--- gemini solution below
--- break the tables into CTE
--- apply joins on these tables
 with user_segments as (	
 	select user_id, case when 
 	registration_date>=(select max(registration_date)-30 
@@ -161,13 +124,11 @@ with user_segments as (
 	from search_events where event_type='search'
 )
 
--- 4. The final output
 SELECT 
     us.user_category AS segment,
     COUNT(ts.*) AS total_searches,
     COUNT(ss.*) AS successful_searches,
 	round((count(ss.*)::NUMERIC/count(ts.*)::NUMERIC),2) as success_rate
-    -- You can add your math for the success rate here!
 FROM user_segments us
 JOIN total_searches ts 
     ON us.user_id = ts.user_id

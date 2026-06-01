@@ -59,33 +59,6 @@ set search_path to 'P10568';
 -- ('TXN-10045', 'PROD-2891', 'US', '2025-05-11', -449.99, 'completed', 'refund', 'TXN-10044');
 
 
-select * from 
-
-
--- without missing dates
-select
-transaction_date, coalesce(sum(case when
-	refund_status is null
-	 then amount end),0) as daily_net_revenue
-from (
-
-	select p1.transaction_id,p1.transaction_date,p1.country,p1.amount,p1.type,p1.status as purchase_status,
-		p2.status as refund_status ,p2.transaction_id  from product_sales p1 
-		left join product_sales p2
-		on p2.original_transaction_id=p1.transaction_id
-		and p2.status='completed'
-	where p1.product_id='PROD-2891'
-	and p1.country='US' and  p1.type='purchase' and p1.status='completed'
-	order by p1.transaction_date,p1.transaction_id
-	
-) group by transaction_date
-having transaction_date between '2025-04-15' and '2025-04-28'
-
-
-select * from product_sales order by transaction_date,transaction_id
-
-
--- filling missing dates (gemini)
 select t1.transaction_date,coalesce(t2.daily_net_revenue,0) as daily_net_revenue from (
 select 
 generate_series('2025-04-15'::date,
@@ -112,7 +85,6 @@ from (
 	and p1.country='US' and  p1.type='purchase' and p1.status='completed'
 	and  p1.transaction_date between '2025-04-15' and '2025-04-28'
 	order by p1.transaction_date,p1.transaction_id
-	
 ) group by transaction_date
 ) t2 on t2.transaction_date=t1.transaction_date
 
