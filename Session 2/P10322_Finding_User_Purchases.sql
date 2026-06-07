@@ -1,41 +1,58 @@
-set search_path to 'P10322';
+-- set search_path to 'P10322';
 
 
-CREATE TABLE amazon_transactions (
-    id BIGINT PRIMARY KEY,
-    user_id BIGINT,
-    item TEXT,
-    created_at DATE,
-    revenue BIGINT
-);INSERT INTO amazon_transactions (id, user_id, item, created_at, revenue) VALUES
-(1, 109, 'milk', '2020-03-03', 123),
-(2, 139, 'biscuit', '2020-03-18', 421),
-(3, 120, 'milk', '2020-03-18', 176),
-(4, 108, 'banana', '2020-03-18', 862),
-(5, 130, 'milk', '2020-03-28', 333),
-(6, 103, 'bread', '2020-03-29', 862),
-(7, 122, 'banana', '2020-03-07', 952),
-(8, 125, 'bread', '2020-03-13', 317),
-(9, 139, 'bread', '2020-03-30', 929),
-(10, 141, 'banana', '2020-03-17', 812),
-(11, 116, 'bread', '2020-03-31', 226),
-(12, 128, 'bread', '2020-03-04', 112),
-(13, 146, 'biscuit', '2020-03-04', 362),
-(14, 119, 'banana', '2020-03-28', 127),
-(15, 142, 'bread', '2020-03-09', 503),
-(16, 122, 'bread', '2020-03-06', 593),
-(17, 128, 'biscuit', '2020-03-24', 160),
-(18, 112, 'banana', '2020-03-24', 262),
-(19, 149, 'banana', '2020-03-29', 382),
-(20, 100, 'banana', '2020-03-18', 599),
-(21, 130, 'milk', '2020-03-16', 604),
-(22, 103, 'milk', '2020-03-31', 290),
-(23, 112, 'banana', '2020-03-23', 523),
-(24, 102, 'bread', '2020-03-25', 325),
-(25, 120, 'biscuit', '2020-03-21', 858),
-(26, 109, 'bread', '2020-03-22', 432),
-(27, 101, 'milk', '2020-03-01', 449),
-(28, 138, 'milk', '2020-03-19', 961),
+-- solution
+select user_id from (
+	select user_id,count(user_id), min(created_at) as first_transaction,
+	( select min(created_at) from amazon_transactions t2 
+		where t2.created_at>(
+			select min(created_at) from amazon_transactions t3
+			where t3.user_id=t1.user_id
+		) and t2.user_id=t1.user_id
+	) as second_transaction
+	from amazon_transactions t1
+	group by user_id
+	order by user_id
+) where second_transaction-first_transaction<=7
+order by user_id
+
+
+
+-- CREATE TABLE amazon_transactions (
+--     id BIGINT PRIMARY KEY,
+--     user_id BIGINT,
+--     item TEXT,
+--     created_at DATE,
+--     revenue BIGINT
+-- );INSERT INTO amazon_transactions (id, user_id, item, created_at, revenue) VALUES
+-- (1, 109, 'milk', '2020-03-03', 123),
+-- (2, 139, 'biscuit', '2020-03-18', 421),
+-- (3, 120, 'milk', '2020-03-18', 176),
+-- (4, 108, 'banana', '2020-03-18', 862),
+-- (5, 130, 'milk', '2020-03-28', 333),
+-- (6, 103, 'bread', '2020-03-29', 862),
+-- (7, 122, 'banana', '2020-03-07', 952),
+-- (8, 125, 'bread', '2020-03-13', 317),
+-- (9, 139, 'bread', '2020-03-30', 929),
+-- (10, 141, 'banana', '2020-03-17', 812),
+-- (11, 116, 'bread', '2020-03-31', 226),
+-- (12, 128, 'bread', '2020-03-04', 112),
+-- (13, 146, 'biscuit', '2020-03-04', 362),
+-- (14, 119, 'banana', '2020-03-28', 127),
+-- (15, 142, 'bread', '2020-03-09', 503),
+-- (16, 122, 'bread', '2020-03-06', 593),
+-- (17, 128, 'biscuit', '2020-03-24', 160),
+-- (18, 112, 'banana', '2020-03-24', 262),
+-- (19, 149, 'banana', '2020-03-29', 382),
+-- (20, 100, 'banana', '2020-03-18', 599),
+-- (21, 130, 'milk', '2020-03-16', 604),
+-- (22, 103, 'milk', '2020-03-31', 290),
+-- (23, 112, 'banana', '2020-03-23', 523),
+-- (24, 102, 'bread', '2020-03-25', 325),
+-- (25, 120, 'biscuit', '2020-03-21', 858),
+-- (26, 109, 'bread', '2020-03-22', 432),
+-- (27, 101, 'milk', '2020-03-01', 449),
+-- (28, 138, 'milk', '2020-03-19', 961),
 -- (29, 100, 'milk', '2020-03-29', 410),
 -- (30, 129, 'milk', '2020-03-02', 771),
 -- (31, 123, 'milk', '2020-03-31', 434),
@@ -110,17 +127,5 @@ CREATE TABLE amazon_transactions (
 -- (100, 117, 'bread', '2020-03-10', 209);
 
 
-select user_id from (
-	select user_id,count(user_id), min(created_at) as first_transaction,
-	( select min(created_at) from amazon_transactions t2 
-		where t2.created_at>(
-			select min(created_at) from amazon_transactions t3
-			where t3.user_id=t1.user_id
-		) and t2.user_id=t1.user_id
-	) as second_transaction
-	from amazon_transactions t1
-	group by user_id
-	order by user_id
-) where second_transaction-first_transaction<=7
-order by user_id
+
 

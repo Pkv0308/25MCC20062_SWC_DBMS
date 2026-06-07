@@ -1,4 +1,49 @@
-set search_path to 'P10566';
+-- set search_path to 'P10566';
+
+-- solution
+
+with user_segments as (	
+	select user_id, case when 
+	registration_date>=(select max(registration_date)-30 
+	from accounts) 
+		then 'new' 
+		else 'existing' 
+	end as user_category from accounts
+	),
+
+  successful_searches as (
+	select s1.user_id,s1.query,s1.session_id 
+		from search_events s1
+		join search_events s2
+		on
+		s2.user_id=s1.user_id
+		and s2.query=s1.query
+		and s2.session_id=s1.session_id
+	where s2.event_type<>s1.event_type
+	and s1.event_type<>'click'
+	and (select extract(epoch from 
+			(s2.event_timestamp -  s1.event_timestamp)
+			)) <=30
+	),
+
+ total_searches as (
+	select session_id,user_id,query
+	from search_events where event_type='search'
+)
+
+SELECT 
+    us.user_category AS segment,
+    COUNT(ts.*) AS total_searches,
+    COUNT(ss.*) AS successful_searches,
+	round((count(ss.*)::NUMERIC/count(ts.*)::NUMERIC),2) as success_rate
+FROM user_segments us
+JOIN total_searches ts 
+    ON us.user_id = ts.user_id
+LEFT JOIN successful_searches ss 
+    ON ts.session_id = ss.session_id 
+    AND ts.query = ss.query
+GROUP BY us.user_category;
+
 
 -- -- Create accounts table
 -- CREATE TABLE accounts (
@@ -95,47 +140,7 @@ set search_path to 'P10566';
 -- (1055, 108, 'smartphone', '2025-10-19 14:00:20', 'click', 'S108-0');
 
 
-with user_segments as (	
-	select user_id, case when 
-	registration_date>=(select max(registration_date)-30 
-	from accounts) 
-		then 'new' 
-		else 'existing' 
-	end as user_category from accounts
-	),
 
-  successful_searches as (
-	select s1.user_id,s1.query,s1.session_id 
-		from search_events s1
-		join search_events s2
-		on
-		s2.user_id=s1.user_id
-		and s2.query=s1.query
-		and s2.session_id=s1.session_id
-	where s2.event_type<>s1.event_type
-	and s1.event_type<>'click'
-	and (select extract(epoch from 
-			(s2.event_timestamp -  s1.event_timestamp)
-			)) <=30
-	),
-
- total_searches as (
-	select session_id,user_id,query
-	from search_events where event_type='search'
-)
-
-SELECT 
-    us.user_category AS segment,
-    COUNT(ts.*) AS total_searches,
-    COUNT(ss.*) AS successful_searches,
-	round((count(ss.*)::NUMERIC/count(ts.*)::NUMERIC),2) as success_rate
-FROM user_segments us
-JOIN total_searches ts 
-    ON us.user_id = ts.user_id
-LEFT JOIN successful_searches ss 
-    ON ts.session_id = ss.session_id 
-    AND ts.query = ss.query
-GROUP BY us.user_category;
 
 
 
